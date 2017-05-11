@@ -1,0 +1,9 @@
+[ResourceMetadata]
+"ResourceDimensions"        "language-en-us"
+"ResourceId"                "English"
+
+[Files]
+"x64\Release\mondpi.exe"    "mondpi.exe"
+"images\icon.png"           "icon.png"
+"images\icon_44x44.png"     "icon_44x44.png"
+"images\icon_150x150.png"   "icon_150x150.png"

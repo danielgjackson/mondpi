@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+	xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" 
+	xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" 
+	xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" 
+>
+	<Identity 
+		Name="mondpi" 
+		Version="1.0.0.1" 
+		Publisher="CN=Daniel Jackson, O=Daniel Jackson, C=UK" 
+		ProcessorArchitecture="x64" 
+	/>
+	<Properties>
+		<DisplayName>Monitor DPI</DisplayName>
+		<PublisherDisplayName>Daniel Jackson</PublisherDisplayName>
+		<Description>Application to report the DPI of multiple monitors.</Description>
+		<Logo>icon.png</Logo>
+	</Properties>
+	<Resources>
+		<Resource Language="en-US" />
+	</Resources>
+	<Dependencies>
+		<TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14316.0" MaxVersionTested="10.0.15063.0" />
+	</Dependencies>
+	<Capabilities>
+		<rescap:Capability Name="runFullTrust"/>
+	</Capabilities>
+	<Applications>
+		<Application Id="mondpi" Executable="mondpi.exe" EntryPoint="Windows.FullTrustApplication">
+			<uap:VisualElements 
+				DisplayName="Monitor DPI" 
+				Description="Report DPI of multiple monitors." 
+				Square150x150Logo="icon_150x150.png" 
+				Square44x44Logo="icon_44x44.png" 
+				BackgroundColor="#464646" 
+			/>
+		</Application>
+	</Applications>
+</Package>

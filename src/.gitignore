@@ -3,3 +3,5 @@
 /Release
 /x64
 /*.user
+/_local
+/*.appx

@@ -1,6 +1,7 @@
 // Monitor DPI Enumeration
 // Dan Jackson
 
+#define _WIN32_WINNT _WIN32_WINNT_WIN10
 #include <windows.h>
 #include <stdio.h>
 
@@ -8,10 +9,17 @@
 #include <ShellScalingApi.h>
 #pragma comment(lib, "shcore.lib")
 
+// Theme
+//#include <Uxtheme.h>
+//#pragma comment(lib, "UxTheme.lib")
+
 // Common Controls (affects text box background)
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#include <Commctrl.h>
+#pragma comment(lib, "ComCtl32.lib")
+#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 
+// Globals
 static HMONITOR hMainMonitor = NULL;
 static HWND hWndMain = NULL;
 static HWND hWndEdit = NULL;
@@ -221,6 +229,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	// Register DPI awareness before any API call that causes the DWM to begin virtualization
 	SetProcessDpiAwareness(dpiAwareness);
 
+	// Theme
+	//SetThemeAppProperties(STAP_ALLOW_CONTROLS | STAP_ALLOW_NONCLIENT);
+
 	// Register window class
 	WNDCLASS wc = { 0 };
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
@@ -244,9 +255,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	hWndMain = CreateWindowEx(0, wc.lpszClassName, TEXT("Monitor DPI"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width * scaleFactor / 100, height * scaleFactor / 100, NULL, NULL, hInstance, NULL);
 	if (hWndMain == NULL) { return 0; }
 
+	// Common controls
+	INITCOMMONCONTROLSEX initCommonControlsEx = { 0 };
+	initCommonControlsEx.dwSize = sizeof(initCommonControlsEx);
+	initCommonControlsEx.dwICC = ICC_STANDARD_CLASSES;
+	if (!InitCommonControlsEx(&initCommonControlsEx))
+	{
+		MessageBox(NULL, TEXT("Problem initializing common controls."), TEXT("Warning"), MB_OK | MB_ICONWARNING);
+	}
+
 	// Create read-only multi-line edit control with mono-space font
 	hWndEdit = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT(""), WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY, 0, 0, 0, 0, hWndMain, NULL, NULL, NULL);
 	PostMessage(hWndEdit, WM_SETFOCUS, 0, 0);
+
+	//SetWindowTheme(hWndEdit, NULL, NULL);
+	//SetWindowTheme(hWndMain, NULL, NULL);
 
 	// Scale fonts
 	UpdateFonts();
