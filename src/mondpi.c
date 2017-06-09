@@ -4,6 +4,8 @@
 #define _WIN32_WINNT _WIN32_WINNT_WIN10
 #include <windows.h>
 #include <stdio.h>
+#include <tchar.h>
+#include <tlhelp32.h>
 
 // GetDpiForMonitor
 #include <ShellScalingApi.h>
@@ -201,10 +203,79 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
+
+
+static DWORD GetProcessIdByName(TCHAR *fileName)
+{
+	DWORD pid = 0;
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	PROCESSENTRY32 process;
+	ZeroMemory(&process, sizeof(process));
+	process.dwSize = sizeof(process);
+	if (Process32First(snapshot, &process))
+	{
+		do
+		{
+			//Log("PROCESS: %d %S\r\n", process.th32ProcessID, process.szExeFile);
+			if (_tcsicmp(fileName, process.szExeFile) == 0)
+			{
+				pid = process.th32ProcessID;
+				//Log("^^^ FOUND ^^^\r\n");
+				break;
+			}
+		} while (Process32Next(snapshot, &process));
+	}
+	CloseHandle(snapshot);
+	return pid;
+}
+
+
+typedef struct {
+	TCHAR *processId;
+	HWND hWnd;
+} findWindowByProcessId_t;
+
+BOOL CALLBACK FindWindowByProcessIdEnumFunc(HWND hWnd, LPARAM lParam)
+{
+	findWindowByProcessId_t *findWindowState = (findWindowByProcessId_t *)lParam;
+	DWORD processId = 0;
+	GetWindowThreadProcessId(hWnd, &processId);
+
+	//Log("WINDOW: 0x%p %d\r\n", hWnd, processId);
+
+	if (processId = findWindowState->processId)
+	{
+		findWindowState->hWnd = hWnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
+static HWND FindWindowByProcessName(TCHAR *processName)
+{
+	DWORD processId = GetProcessIdByName(processName);
+	HWND hWnd = NULL;
+	if (processId != 0)
+	{
+		Log("processID=%d\r\n", processId);
+		findWindowByProcessId_t findWindowState = { 0 };
+		findWindowState.processId = processId;
+		findWindowState.hWnd = NULL;
+		EnumWindows(FindWindowByProcessIdEnumFunc, (LPARAM)&findWindowState);
+		return findWindowState.hWnd;
+	}
+	return hWnd;
+}
+
+
+
 // Main entry point
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
 	PROCESS_DPI_AWARENESS dpiAwareness = PROCESS_PER_MONITOR_DPI_AWARE;
+	TCHAR *processName = NULL;
 
 	// Process command-line arguments
 	int argc = 0;
@@ -215,6 +286,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 		if (_wcsicmp(L"-dpiaware", argv[i]) == 0)
 		{
 			dpiAwareness = (PROCESS_DPI_AWARENESS)_wtoi(argv[++i]);
+		}
+		else if (_wcsicmp(L"-process", argv[i]) == 0)
+		{
+			processName = argv[++i];
 		}
 		else
 		{
@@ -278,6 +353,35 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	Log("Starting...\r\n");
 	Log("\r\n");
 
+	if (processName != NULL)
+	{
+		Log("--- PROCESS ---\r\n");
+
+		Log("Name=%S\r\n", processName);
+		HWND hWnd = FindWindowByProcessName(processName);
+		if (hWnd != NULL)
+		{
+			Log("hWndProcess=0x%p\r\n", (void *)hWnd);
+			DPI_AWARENESS_CONTEXT dpiAwarenessContext = GetWindowDpiAwarenessContext(hWnd);
+			DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(dpiAwarenessContext);
+			char *dpiAwarenessStr = "<unknown>";
+			switch (dpiAwareness)
+			{
+				case DPI_AWARENESS_INVALID:           dpiAwarenessStr = "DPI_AWARENESS_INVALID"; break;
+				case DPI_AWARENESS_UNAWARE:           dpiAwarenessStr = "DPI_AWARENESS_UNAWARE"; break;
+				case DPI_AWARENESS_SYSTEM_AWARE:      dpiAwarenessStr = "DPI_AWARENESS_SYSTEM_AWARE"; break;
+				case DPI_AWARENESS_PER_MONITOR_AWARE: dpiAwarenessStr = "DPI_AWARENESS_PER_MONITOR_AWARE"; break;
+			}
+			Log("DPI_AWARENESS=%s (%d)\r\n", dpiAwarenessStr, (int)dpiAwareness);
+		}
+		else
+		{
+			Log("ERROR: Window not found matching process name: %S\r\n", processName);
+		}
+
+		Log("\r\n");
+	}
+
 	Log("--- MAIN MONITOR ---\r\n");
 	DumpMonitorInfo(hMainMonitor);
 	Log("\r\n");
@@ -299,3 +403,4 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	LocalFree(argv);
 	return 0;
 }
+
